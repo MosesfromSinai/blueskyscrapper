@@ -1,19 +1,12 @@
 # Bluesky Data Collector
 
-This project is a CS172 data collection crawler that uses the Bluesky API to collect posts based on search queries. The collected posts are stored in JSONL format, with one post per row. Output files are split into chunks of about 10 MB each.
-
-This project was built for the course requirement to collect at least 500 MB of raw post data from Reddit or Bluesky.
+This project is a CS172 data collection crawler that uses the Bluesky API to collect posts based on search queries.
 
 ## Features
 
 - Collects Bluesky posts using the `atproto` Python library
 - Accepts multiple search queries as input
-- Stores one post per row in JSONL format
-- Splits output into files of about 10 MB each
 - Avoids duplicate posts using post URIs
-- Extracts external URLs from posts when available
-- Fetches the HTML title of linked pages and adds it as an extra searchable field
-- Saves data into a user-specified output directory
 
 ## Project Structure
 
