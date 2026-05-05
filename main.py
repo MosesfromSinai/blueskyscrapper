@@ -8,7 +8,7 @@ from atproto import Client
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-MAX_FILE_SIZE = 10 * 1024 * 1024 #finalizes the max MB whcih is 10MB
+MAX_FILE_SIZE = 10 * 1024 * 1024 # maximum size for each output file, which is about 10 MB
 
 #gets the HTML titla by checking the parsing and the given URL 
 def get_html_title(url):
@@ -68,20 +68,21 @@ def save_posts(queries, target_mb, output_dir):
     total_data_size = 0
 
     file_path = os.path.join(output_dir, f"posts_{current_file_number}.jsonl")
-####collects data until hits the max target size 
+# collects data until hits the max target size 
     while total_data_size < target_mb * 1024 * 1024:
         for query in queries:
             posts = fetch_posts(client, query)
 
             for bluesky_post in posts:
                 uri = bluesky_post.uri
-##### initialize API client
+# initialize API client
 
+                # skip posts that were already collected from another query
                 if uri in seen_post_uris:
                     continue
-
+                # add the post URI to the set so duplicates are not saved later
                 seen_post_uris.add(uri)
-### external data
+# external data
                 external_url = None
                 external_title = None
 
@@ -128,7 +129,7 @@ def save_posts(queries, target_mb, output_dir):
                 if total_data_size >= target_mb * 1024 * 1024:
                     break
 
-            if total_data_size >= target_mb * 1024 * 1024:
+            if total_data_size >= target_mb * 1024 * 1024: # Stop collecting once the target amount of data has been reached
                 break
 
         time.sleep(1)
