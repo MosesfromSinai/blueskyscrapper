@@ -10,7 +10,6 @@ BSKY_HANDLE=your_handle
 BSKY_APP_PASSWORD=your_app_password
 
 ## Run
-
 python main.py --queries "ai,technology,programming,science,news" --target_mb 500 --output data
 
 ## Output
