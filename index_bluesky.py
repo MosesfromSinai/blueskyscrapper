@@ -1,10 +1,16 @@
 import json
 from pathlib import Path
 
+import lucene
+from java.nio.file import Paths
+from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.document import Document, Field, StoredField, StringField, TextField
+from org.apache.lucene.index import IndexWriter, IndexWriterConfig
+from org.apache.lucene.store import FSDirectory
 
 
 DATA_DIRS = (Path("sample_data"), Path("data"))
+DEFAULT_INDEX_DIR = Path("indexdir")
 COUNT_FIELDS = {
     "likes": "like_count",
     "replies": "reply_count",
@@ -52,3 +58,18 @@ def build_document(post):
     for index_field, post_field in COUNT_FIELDS.items():
         doc.add(StoredField(index_field, safe_int(post.get(post_field))))
     return doc
+
+
+def initialize_lucene():
+    if lucene.getVMEnv() is None:
+        lucene.initVM(vmargs=["-Djava.awt.headless=true"])
+
+
+def open_index_writer(index_dir):
+    index_dir = Path(index_dir)
+    index_dir.mkdir(parents=True, exist_ok=True)
+    directory = FSDirectory.open(Paths.get(str(index_dir.resolve())))
+    analyzer = StandardAnalyzer()
+    config = IndexWriterConfig(analyzer)
+    config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+    return IndexWriter(directory, config)
