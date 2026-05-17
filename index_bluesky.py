@@ -1,3 +1,4 @@
+import argparse
 import json
 from pathlib import Path
 
@@ -73,3 +74,34 @@ def open_index_writer(index_dir):
     config = IndexWriterConfig(analyzer)
     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
     return IndexWriter(directory, config)
+
+
+def build_index(index_dir=DEFAULT_INDEX_DIR):
+    jsonl_files = list(iter_jsonl_files())
+    if not jsonl_files:
+        raise FileNotFoundError("No .jsonl files found in sample_data/ or data/")
+
+    initialize_lucene()
+    writer = open_index_writer(index_dir)
+    count = 0
+    try:
+        for _, _, post in iter_posts(jsonl_files):
+            writer.addDocument(build_document(post))
+            count += 1
+            if count % 1000 == 0:
+                print(f"Indexed {count} posts...")
+        writer.commit()
+    finally:
+        writer.close()
+    print(f"Indexed {count} posts into {index_dir}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Build a PyLucene index for Bluesky posts.")
+    parser.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR))
+    args = parser.parse_args()
+    build_index(args.index_dir)
+
+
+if __name__ == "__main__":
+    main()
