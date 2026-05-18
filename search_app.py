@@ -81,9 +81,17 @@ def stored_int(doc, field_name):
 def compute_final_score(doc, relevance_score, now=None):
     now = now or datetime.now(timezone.utc)
     created_at = parse_created_at(doc.get("created_at"))
-    age_seconds = 0 if created_at is None else max((now - created_at).total_seconds(), 0)
-    recency_boost = 1 / (1 + age_seconds / 86400)
-    engagement_boost = log(1 + sum(stored_int(doc, field) for field in ENGAGEMENT_FIELDS)) * 0.1
+
+    if created_at is None:
+        age_in_days = 0
+    else:
+        age_seconds = max((now - created_at).total_seconds(), 0)
+        age_in_days = age_seconds / 86400
+
+    engagement = sum(stored_int(doc, field) for field in ENGAGEMENT_FIELDS)
+    recency_boost = 1 / (1 + age_in_days)
+    engagement_boost = log(1 + engagement) * 0.1
+
     return float(relevance_score) + recency_boost + engagement_boost
 
 
