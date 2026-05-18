@@ -11,7 +11,6 @@ from org.apache.lucene.queryparser.classic import MultiFieldQueryParser, QueryPa
 from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.store import FSDirectory
 
-
 INDEX_DIR = Path("indexdir")
 SEARCH_FIELDS = ("text", "author_handle", "author_display_name", "external_title")
 CANDIDATE_LIMIT = 50
@@ -34,7 +33,7 @@ def open_searcher(index_dir=INDEX_DIR):
     directory = FSDirectory.open(Paths.get(str(Path(index_dir).resolve())))
     reader = DirectoryReader.open(directory)
     searcher = IndexSearcher(reader)
-    return searcher, reader
+    return searcher, reader, directory
 
 
 def parse_query(query_text):
@@ -48,13 +47,14 @@ def search_candidates(query_text, limit=CANDIDATE_LIMIT):
     if not query_text.strip():
         return []
 
-    searcher, reader = open_searcher()
+    searcher, reader, directory = open_searcher()
     try:
         query = parse_query(query_text)
         hits = searcher.search(query, limit).scoreDocs
         return [(searcher.doc(hit.doc), float(hit.score)) for hit in hits]
     finally:
         reader.close()
+        directory.close()
 
 
 # PyLucene gives top-k inverted-index relevance; we rerank with recency
@@ -98,11 +98,13 @@ def compute_final_score(doc, relevance_score, now=None):
 def rerank_candidates(candidates):
     ranked = []
     for doc, score in candidates:
-        ranked.append({
-            "doc": doc,
-            "relevance_score": float(score),
-            "final_score": compute_final_score(doc, score),
-        })
+        ranked.append(
+            {
+                "doc": doc,
+                "relevance_score": float(score),
+                "final_score": compute_final_score(doc, score),
+            }
+        )
     return sorted(ranked, key=lambda result: result["final_score"], reverse=True)
 
 
@@ -128,15 +130,17 @@ def build_results(query_text, limit=RESULT_LIMIT):
         doc = result["doc"]
         text = doc.get("text") or ""
         author = doc.get("author_display_name") or doc.get("author_handle") or "Unknown"
-        results.append({
-            "author": author,
-            "created_at": doc.get("created_at") or "",
-            "text": text,
-            "snippet": custom_snippet(text, query_text),
-            "external_url": doc.get("external_url") or "",
-            "relevance_score": result["relevance_score"],
-            "final_score": result["final_score"],
-        })
+        results.append(
+            {
+                "author": author,
+                "created_at": doc.get("created_at") or "",
+                "text": text,
+                "snippet": custom_snippet(text, query_text),
+                "external_url": doc.get("external_url") or "",
+                "relevance_score": result["relevance_score"],
+                "final_score": result["final_score"],
+            }
+        )
     return results
 
 

@@ -5,10 +5,15 @@ from pathlib import Path
 import lucene
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
-from org.apache.lucene.document import Document, Field, StoredField, StringField, TextField
+from org.apache.lucene.document import (
+    Document,
+    Field,
+    StoredField,
+    StringField,
+    TextField,
+)
 from org.apache.lucene.index import IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import FSDirectory
-
 
 DATA_DIRS = (Path("sample_data"), Path("data"))
 DEFAULT_INDEX_DIR = Path("indexdir")
@@ -36,7 +41,9 @@ def iter_posts(jsonl_files):
                 try:
                     yield jsonl_file, line_number, json.loads(line)
                 except json.JSONDecodeError as error:
-                    print(f"Skipping invalid JSON in {jsonl_file}:{line_number}: {error}")
+                    print(
+                        f"Skipping invalid JSON in {jsonl_file}:{line_number}: {error}"
+                    )
 
 
 def safe_text(value):
@@ -53,8 +60,15 @@ def safe_int(value):
 def build_document(post):
     doc = Document()
     for field_name in ("uri", "created_at", "indexed_at", "external_url"):
-        doc.add(StringField(field_name, safe_text(post.get(field_name)), Field.Store.YES))
-    for field_name in ("author_handle", "author_display_name", "text", "external_title"):
+        doc.add(
+            StringField(field_name, safe_text(post.get(field_name)), Field.Store.YES)
+        )
+    for field_name in (
+        "author_handle",
+        "author_display_name",
+        "text",
+        "external_title",
+    ):
         doc.add(TextField(field_name, safe_text(post.get(field_name)), Field.Store.YES))
     for index_field, post_field in COUNT_FIELDS.items():
         doc.add(StoredField(index_field, safe_int(post.get(post_field))))
@@ -97,7 +111,9 @@ def build_index(index_dir=DEFAULT_INDEX_DIR):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build a PyLucene index for Bluesky posts.")
+    parser = argparse.ArgumentParser(
+        description="Build a PyLucene index for Bluesky posts."
+    )
     parser.add_argument("--index-dir", default=str(DEFAULT_INDEX_DIR))
     args = parser.parse_args()
     build_index(args.index_dir)

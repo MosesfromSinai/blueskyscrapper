@@ -8,15 +8,20 @@ from atproto import Client
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-MAX_FILE_SIZE = 10 * 1024 * 1024 # maximum size for each output file, which is about 10 MB
+MAX_FILE_SIZE = (
+    10 * 1024 * 1024
+)  # maximum size for each output file, which is about 10 MB
 
-#gets the HTML titla by checking the parsing and the given URL 
+
+# gets the HTML titla by checking the parsing and the given URL
 def get_html_title(url):
     try:
-    #prgram sends a request to the URL with a timeout of 5
-        response = requests.get(url, timeout=5, headers={"User-Agent": "CS172-Bluesky-Collector"})
+        # prgram sends a request to the URL with a timeout of 5
+        response = requests.get(
+            url, timeout=5, headers={"User-Agent": "CS172-Bluesky-Collector"}
+        )
         soup = BeautifulSoup(response.text, "html.parser")
-    #parses whatever is in the HTML (follows the Beautiful soup library)
+        # parses whatever is in the HTML (follows the Beautiful soup library)
         if soup.title and soup.title.string:
             return soup.title.string.strip()
 
@@ -25,14 +30,15 @@ def get_html_title(url):
 
     return None
 
-#log in credentials for bluesky
+
+# log in credentials for bluesky
 def create_client():
     load_dotenv()
     #
-    handle = os.getenv("BSKY_HANDLE") #username
-    app_password = os.getenv("BSKY_APP_PASSWORD") #password 
+    handle = os.getenv("BSKY_HANDLE")  # username
+    app_password = os.getenv("BSKY_APP_PASSWORD")  # password
 
-    if not handle or not app_password: #log in authentication
+    if not handle or not app_password:  # log in authentication
         raise ValueError("Missing BSKY_HANDLE or BSKY_APP_PASSWORD in .env")
 
     client = Client()
@@ -40,15 +46,14 @@ def create_client():
 
     return client
 
-#function that fetches the posts from bluesky 
+
+# function that fetches the posts from bluesky
 def fetch_posts(client, query, limit=100):
     try:
-        response = client.app.bsky.feed.search_posts({
-            "q": query,
-            "limit": limit,
-            "sort": "latest"
-        })
-        #queries throught the Bluesky api and the fetches posts from bluesky 
+        response = client.app.bsky.feed.search_posts(
+            {"q": query, "limit": limit, "sort": "latest"}
+        )
+        # queries throught the Bluesky api and the fetches posts from bluesky
         return response.posts
 
     except Exception as error:
@@ -68,21 +73,21 @@ def save_posts(queries, target_mb, output_dir):
     total_data_size = 0
 
     file_path = os.path.join(output_dir, f"posts_{current_file_number}.jsonl")
-# collects data until hits the max target size 
+    # collects data until hits the max target size
     while total_data_size < target_mb * 1024 * 1024:
         for query in queries:
             posts = fetch_posts(client, query)
 
             for bluesky_post in posts:
                 uri = bluesky_post.uri
-# initialize API client
+                # initialize API client
 
                 # skip posts that were already collected from another query
                 if uri in seen_post_uris:
                     continue
                 # add the post URI to the set so duplicates are not saved later
                 seen_post_uris.add(uri)
-# external data
+                # external data
                 external_url = None
                 external_title = None
 
@@ -107,7 +112,7 @@ def save_posts(queries, target_mb, output_dir):
                     "quote_count": bluesky_post.quote_count,
                     "indexed_at": bluesky_post.indexed_at,
                     "external_url": external_url,
-                    "external_title": external_title
+                    "external_title": external_title,
                 }
 
                 line = json.dumps(post, ensure_ascii=False) + "\n"
@@ -116,7 +121,9 @@ def save_posts(queries, target_mb, output_dir):
                 if current_file_size + line_size > MAX_FILE_SIZE:
                     current_file_number += 1
                     current_file_size = 0
-                    file_path = os.path.join(output_dir, f"posts_{current_file_number}.jsonl")
+                    file_path = os.path.join(
+                        output_dir, f"posts_{current_file_number}.jsonl"
+                    )
 
                 with open(file_path, "a", encoding="utf-8") as file:
                     file.write(line)
@@ -129,7 +136,9 @@ def save_posts(queries, target_mb, output_dir):
                 if total_data_size >= target_mb * 1024 * 1024:
                     break
 
-            if total_data_size >= target_mb * 1024 * 1024: # Stop collecting once the target amount of data has been reached
+            if (
+                total_data_size >= target_mb * 1024 * 1024
+            ):  # Stop collecting once the target amount of data has been reached
                 break
 
         time.sleep(1)
