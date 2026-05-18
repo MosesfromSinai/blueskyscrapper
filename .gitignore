@@ -3,6 +3,6 @@ data/
 indexdir/
 __pycache__/
 *.pyc
-collector.sh
 crawler.sh
 requirements.txt
+collector.sh
