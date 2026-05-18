@@ -7,16 +7,21 @@ This project is a CS172 data collection crawler that uses the Bluesky API to col
 - Collects Bluesky posts using the `atproto` Python library
 - Accepts multiple search queries as input
 - Avoids duplicate posts using post URIs
+- Builds a PyLucene index over collected Bluesky JSONL files
+- Provides a Flask search interface for Part B
 
 ## Project Structure
 
 ```bash
 blueskyscrapper/
 ├── main.py              # main Python crawler program
+├── index_bluesky.py     # builds the PyLucene search index
+├── search_app.py        # Flask search interface
 ├── crawler.sh           # Unix/Linux executable script for running the crawler
 ├── collector.sh         # optional shell script/helper
 ├── requirements.txt     # Python dependencies
 ├── sample_data/         # sample output data
+├── templates/           # Flask HTML templates
 ├── README.md            # project documentation
 └── .gitignore
 ```
@@ -31,10 +36,14 @@ Install the required packages with:
 pip install -r requirements.txt
 ```
 
+Part B also requires PyLucene. PyLucene is not listed as a normal pip dependency
+because it usually needs a separate local installation with Java/Lucene support.
+Install PyLucene in the Python environment before running the indexer or search app.
+
 If `requirements.txt` is not available, install the dependencies manually:
 
 ```bash
-pip install atproto python-dotenv requests beautifulsoup4
+pip install atproto python-dotenv requests beautifulsoup4 Flask
 ```
 
 ## Bluesky Authentication
@@ -107,3 +116,47 @@ data/posts_1.jsonl
 data/posts_2.jsonl
 data/posts_3.jsonl
 ```
+
+## Part B: PyLucene Search
+
+The Part B collection is the Bluesky JSONL data. The indexer reads every
+`.jsonl` file in `sample_data/` and also reads `data/*.jsonl` if the `data/`
+folder exists.
+
+Build the PyLucene index:
+
+```bash
+python index_bluesky.py
+```
+
+This creates a local Lucene index in:
+
+```bash
+indexdir/
+```
+
+Run the Flask search app:
+
+```bash
+python search_app.py
+```
+
+Then open:
+
+```bash
+http://127.0.0.1:5000
+```
+
+The search page shows the top 10 results. Each result displays the raw
+PyLucene relevance score and the final combined score.
+
+Ranking function:
+
+```text
+final_score = relevance_score + recency_boost + engagement_boost
+recency_boost = 1 / (1 + age_in_days)
+engagement_boost = log(1 + likes + replies + reposts + quotes) * 0.1
+```
+
+The Flask app first retrieves a top-k candidate set from PyLucene, then reranks those candidates
+using recency and engagement.
