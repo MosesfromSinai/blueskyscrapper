@@ -76,8 +76,11 @@ def build_document(post):
 
 
 def initialize_lucene():
-    if lucene.getVMEnv() is None:
+    env = lucene.getVMEnv()
+    if env is None:
         lucene.initVM(vmargs=["-Djava.awt.headless=true"])
+    else:
+        env.attachCurrentThread()
 
 
 def open_index_writer(index_dir):
@@ -87,7 +90,7 @@ def open_index_writer(index_dir):
     analyzer = StandardAnalyzer()
     config = IndexWriterConfig(analyzer)
     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-    return IndexWriter(directory, config)
+    return IndexWriter(directory, config), directory
 
 
 def build_index(index_dir=DEFAULT_INDEX_DIR):
@@ -96,7 +99,7 @@ def build_index(index_dir=DEFAULT_INDEX_DIR):
         raise FileNotFoundError("No .jsonl files found in sample_data/ or data/")
 
     initialize_lucene()
-    writer = open_index_writer(index_dir)
+    writer, directory = open_index_writer(index_dir)
     count = 0
     try:
         for _, _, post in iter_posts(jsonl_files):
@@ -107,6 +110,7 @@ def build_index(index_dir=DEFAULT_INDEX_DIR):
         writer.commit()
     finally:
         writer.close()
+        directory.close()
     print(f"Indexed {count} posts into {index_dir}")
 
 
