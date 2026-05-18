@@ -5,4 +5,4 @@ __pycache__/
 *.pyc
 collector.sh
 crawler.sh
-
+requirements.txt
