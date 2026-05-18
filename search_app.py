@@ -3,7 +3,7 @@ from math import log
 from pathlib import Path
 
 import lucene
-from flask import Flask
+from flask import Flask, render_template, request
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.index import DirectoryReader
@@ -130,3 +130,27 @@ def build_results(query_text, limit=RESULT_LIMIT):
             "final_score": result["final_score"],
         })
     return results
+
+
+@app.route("/", methods=["GET"])
+def search_page():
+    query = request.args.get("q", "").strip()
+    results = []
+    error = None
+
+    if query:
+        try:
+            results = build_results(query)
+        except Exception as exc:
+            error = f"Search failed. Make sure the PyLucene index exists in {INDEX_DIR}/. ({exc})"
+
+    return render_template(
+        "search.html",
+        query=query,
+        results=results,
+        error=error,
+    )
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
