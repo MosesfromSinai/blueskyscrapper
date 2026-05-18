@@ -1,0 +1,6 @@
+atproto
+python-dotenv
+requests
+beautifulsoup4
+Flask
+# PyLucene is required for Part B, but it must be installed separately.
