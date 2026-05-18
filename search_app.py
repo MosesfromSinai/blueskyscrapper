@@ -15,6 +15,7 @@ from org.apache.lucene.store import FSDirectory
 INDEX_DIR = Path("indexdir")
 SEARCH_FIELDS = ("text", "author_handle", "author_display_name", "external_title")
 CANDIDATE_LIMIT = 50
+RESULT_LIMIT = 10
 ENGAGEMENT_FIELDS = ("likes", "replies", "reposts", "quotes")
 
 app = Flask(__name__)
@@ -63,7 +64,8 @@ def parse_created_at(value):
         return None
     try:
         parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except ValueError: return None
+    except ValueError:
+        return None
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
@@ -72,7 +74,8 @@ def stored_int(doc, field_name):
         field = doc.getField(field_name)
         value = field.numericValue() if field else doc.get(field_name)
         return int(value or 0)
-    except (AttributeError, TypeError, ValueError): return 0
+    except (AttributeError, TypeError, ValueError):
+        return 0
 
 
 def compute_final_score(doc, relevance_score, now=None):
@@ -85,6 +88,45 @@ def compute_final_score(doc, relevance_score, now=None):
 
 
 def rerank_candidates(candidates):
-    ranked = [{"doc": doc, "relevance_score": float(score), "final_score": compute_final_score(doc, score)}
-              for doc, score in candidates]
+    ranked = []
+    for doc, score in candidates:
+        ranked.append({
+            "doc": doc,
+            "relevance_score": float(score),
+            "final_score": compute_final_score(doc, score),
+        })
     return sorted(ranked, key=lambda result: result["final_score"], reverse=True)
+
+
+def custom_snippet(text, query_text, width=180):
+    text = text or ""
+    lower_text = text.lower()
+    terms = [term.lower() for term in query_text.split() if term]
+    match_positions = [lower_text.find(term) for term in terms if term in lower_text]
+    start = max((min(match_positions) if match_positions else 0) - width // 3, 0)
+    end = min(start + width, len(text))
+    snippet = text[start:end].strip()
+    if start > 0:
+        snippet = "..." + snippet
+    if end < len(text):
+        snippet += "..."
+    return snippet
+
+
+def build_results(query_text, limit=RESULT_LIMIT):
+    ranked = rerank_candidates(search_candidates(query_text))[:limit]
+    results = []
+    for result in ranked:
+        doc = result["doc"]
+        text = doc.get("text") or ""
+        author = doc.get("author_display_name") or doc.get("author_handle") or "Unknown"
+        results.append({
+            "author": author,
+            "created_at": doc.get("created_at") or "",
+            "text": text,
+            "snippet": custom_snippet(text, query_text),
+            "external_url": doc.get("external_url") or "",
+            "relevance_score": result["relevance_score"],
+            "final_score": result["final_score"],
+        })
+    return results
