@@ -7,8 +7,8 @@ from flask import Flask, render_template, request
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.index import DirectoryReader
-from org.apache.lucene.queryparser.classic import MultiFieldQueryParser, QueryParser
-from org.apache.lucene.search import IndexSearcher
+from org.apache.lucene.queryparser.classic import QueryParser
+from org.apache.lucene.search import BooleanClause, BooleanQuery, IndexSearcher
 from org.apache.lucene.store import FSDirectory
 
 INDEX_DIR = Path("indexdir")
@@ -39,8 +39,11 @@ def open_searcher(index_dir=INDEX_DIR):
 def parse_query(query_text):
     analyzer = StandardAnalyzer()
     escaped_query = QueryParser.escape(query_text.strip())
-    parser = MultiFieldQueryParser(SEARCH_FIELDS, analyzer)
-    return parser.parse(escaped_query)
+    builder = BooleanQuery.Builder()
+    for field_name in SEARCH_FIELDS:
+        parser = QueryParser(field_name, analyzer)
+        builder.add(parser.parse(escaped_query), BooleanClause.Occur.SHOULD)
+    return builder.build()
 
 
 def search_candidates(query_text, limit=CANDIDATE_LIMIT):
@@ -51,7 +54,8 @@ def search_candidates(query_text, limit=CANDIDATE_LIMIT):
     try:
         query = parse_query(query_text)
         hits = searcher.search(query, limit).scoreDocs
-        return [(searcher.doc(hit.doc), float(hit.score)) for hit in hits]
+        stored_fields = searcher.storedFields()
+        return [(stored_fields.document(hit.doc), float(hit.score)) for hit in hits]
     finally:
         reader.close()
         directory.close()

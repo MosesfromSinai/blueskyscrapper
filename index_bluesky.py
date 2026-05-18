@@ -33,17 +33,25 @@ def iter_jsonl_files():
 
 def iter_posts(jsonl_files):
     for jsonl_file in jsonl_files:
-        with jsonl_file.open("r", encoding="utf-8") as posts_file:
-            for line_number, line in enumerate(posts_file, start=1):
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    yield jsonl_file, line_number, json.loads(line)
-                except json.JSONDecodeError as error:
-                    print(
-                        f"Skipping invalid JSON in {jsonl_file}:{line_number}: {error}"
-                    )
+        try:
+            # Scraped/social-media text can contain partial UTF-8 bytes.
+            with jsonl_file.open(
+                "r", encoding="utf-8", errors="replace"
+            ) as posts_file:
+                for line_number, line in enumerate(posts_file, start=1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        yield jsonl_file, line_number, json.loads(line)
+                    except json.JSONDecodeError as error:
+                        print(
+                            f"Skipping invalid JSON in {jsonl_file}:{line_number}: {error}"
+                        )
+        except UnicodeDecodeError as error:
+            print(f"Unicode decode error while reading: {jsonl_file}")
+            print(f"Error: {error}")
+            raise
 
 
 def safe_text(value):

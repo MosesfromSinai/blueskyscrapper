@@ -160,3 +160,33 @@ engagement_boost = log(1 + likes + replies + reposts + quotes) * 0.1
 
 The Flask app first retrieves a top-k candidate set from PyLucene, then reranks those candidates
 using recency and engagement.
+
+## Docker Setup for PyLucene
+
+Docker can be used for Part B because PyLucene may not install easily on
+Apple Silicon/macOS. The Docker container gives the project a Linux environment
+with PyLucene available.
+
+Build the Docker image:
+
+```bash
+docker build -t bluesky-pylucene .
+```
+
+Build the index inside Docker:
+
+```bash
+docker run --rm -v "$PWD:/app" bluesky-pylucene python index_bluesky.py
+```
+
+Run the Flask search app inside Docker:
+
+```bash
+docker run --rm -it -p 5001:5000 -v "$PWD:/app" bluesky-pylucene flask --app search_app run --host=0.0.0.0 --port=5000 --debug
+```
+
+Then open:
+
+```bash
+http://localhost:5001
+```
