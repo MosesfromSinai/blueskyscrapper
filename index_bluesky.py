@@ -35,9 +35,7 @@ def iter_posts(jsonl_files):
     for jsonl_file in jsonl_files:
         try:
             # Scraped/social-media text can contain partial UTF-8 bytes.
-            with jsonl_file.open(
-                "r", encoding="utf-8", errors="replace"
-            ) as posts_file:
+            with jsonl_file.open("r", encoding="utf-8", errors="replace") as posts_file:
                 for line_number, line in enumerate(posts_file, start=1):
                     line = line.strip()
                     if not line:
