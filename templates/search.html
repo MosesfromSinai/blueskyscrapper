@@ -36,6 +36,9 @@
 
     {% if query and not error %}
         <h2>Results for "{{ query }}"</h2>
+        <p class="meta">Ranking mode: {{ rank_by }}</p>
+        <p class="scores">Final Score: {{ "%.2f"|format(result.final_score) }}</p>
+        <p class="scores">Engagement: {{ result.engagement }}</p>
         {% if results %}
             {% for result in results %}
                 <article>
