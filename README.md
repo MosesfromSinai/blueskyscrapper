@@ -161,6 +161,24 @@ engagement_boost = log(1 + likes + replies + reposts + quotes) * 0.1
 The Flask app first retrieves a top-k candidate set from PyLucene, then reranks those candidates
 using recency and engagement.
 
+### Extra Credit: Ranking Modes
+
+For the extra credit part of Phase B, the Flask search interface supports multiple ranking modes for Bluesky posts. Users can choose how results are ordered using the ranking dropdown on the search page.
+
+The supported ranking modes are:
+- **Combined**: sorts by the final score, which combines PyLucene relevance, recency, and engagement.
+- **Relevance**: sorts only by the raw PyLucene relevance score.
+- **Newest**: sorts posts by their `created_at` timestamp, showing the newest posts first.
+- **Engagement**: sorts by total interaction count, using likes, replies, reposts, and quotes.
+
+The engagement value is calculated as:
+
+```text
+engagement = likes + replies + reposts + quotes
+```
+
+This allows users to compare different ways of ranking social media search results including relevance-based, time-based, engagement-based, and combined ranking.
+
 ## Docker Setup for PyLucene
 
 Docker can be used for Part B because PyLucene may not install easily on
