@@ -98,18 +98,52 @@ def compute_final_score(doc, relevance_score, now=None):
 
     return float(relevance_score) + recency_boost + engagement_boost
 
+def compute_engagement(doc):
+    return sum(stored_int(doc, field) for field in ENGAGEMENT_FIELDS)
 
-def rerank_candidates(candidates):
+# Sort candidates based on the selected extra credit ranking mode.
+def rerank_candidates(candidates, rank_by="combined"):
     ranked = []
     for doc, score in candidates:
+        created_at = parse_created_at(doc.get("created_at"))
+        engagement = compute_engagement(doc)
+
         ranked.append(
             {
                 "doc": doc,
                 "relevance_score": float(score),
                 "final_score": compute_final_score(doc, score),
+                "created_at": created_at,
+                "engagement": engagement,
             }
         )
+
+    if rank_by == "relevance":
+        return sorted(ranked, key=lambda result: result["relevance_score"], reverse=True)
+
+    if rank_by == "newest":
+        return sorted(
+            ranked,
+            key=lambda result: result["created_at"] or datetime.min.replace(tzinfo=timezone.utc),
+            reverse=True,
+        )
+
+    if rank_by == "engagement":
+        return sorted(ranked, key=lambda result: result["engagement"], reverse=True)
+
     return sorted(ranked, key=lambda result: result["final_score"], reverse=True)
+
+##def rerank_candidates(candidates):
+##    ranked = []
+##    for doc, score in candidates:
+##        ranked.append(
+##           {
+##                "doc": doc,
+##                "relevance_score": float(score),
+##                "final_score": compute_final_score(doc, score),
+##            }
+##       )
+##    return sorted(ranked, key=lambda result: result["final_score"], reverse=True)
 
 
 def custom_snippet(text, query_text, width=180):
@@ -126,9 +160,12 @@ def custom_snippet(text, query_text, width=180):
         snippet += "..."
     return snippet
 
+## def build_results(query_text, limit=RESULT_LIMIT):
+##    ranked = rerank_candidates(search_candidates(query_text))[:limit]
 
-def build_results(query_text, limit=RESULT_LIMIT):
-    ranked = rerank_candidates(search_candidates(query_text))[:limit]
+
+def build_results(query_text, rank_by="combined", limit=RESULT_LIMIT):
+    ranked = rerank_candidates(search_candidates(query_text), rank_by)[:limit]
     results = []
     for result in ranked:
         doc = result["doc"]
@@ -143,6 +180,7 @@ def build_results(query_text, limit=RESULT_LIMIT):
                 "external_url": doc.get("external_url") or "",
                 "relevance_score": result["relevance_score"],
                 "final_score": result["final_score"],
+                "engagement": result["engagement"],
             }
         )
     return results
@@ -151,18 +189,20 @@ def build_results(query_text, limit=RESULT_LIMIT):
 @app.route("/", methods=["GET"])
 def search_page():
     query = request.args.get("q", "").strip()
+    rank_by = request.args.get("rank_by", "combined")
     results = []
     error = None
 
     if query:
         try:
-            results = build_results(query)
+            results = build_results(query, rank_by)
         except Exception as exc:
             error = f"Search failed. Make sure the PyLucene index exists in {INDEX_DIR}/. ({exc})"
 
     return render_template(
         "search.html",
         query=query,
+        rank_by=rank_by,
         results=results,
         error=error,
     )
