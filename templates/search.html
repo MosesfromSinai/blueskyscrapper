@@ -7,7 +7,7 @@
         body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 900px; line-height: 1.5; }
         form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
         input[type="search"] { flex: 1; padding: 0.6rem; font-size: 1rem; }
-        button { padding: 0.6rem 1rem; font-size: 1rem; }
+        button, select { padding: 0.6rem 1rem; font-size: 1rem; }
         article { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
         .meta, .scores { color: #555; font-size: 0.95rem; }
         .snippet { font-weight: bold; }
@@ -19,6 +19,14 @@
 
     <form method="get" action="/">
         <input type="search" name="q" value="{{ query }}" placeholder="Search posts">
+
+        <select name="rank_by">
+            <option value="combined" {% if rank_by == "combined" %}selected{% endif %}>Combined</option>
+            <option value="relevance" {% if rank_by == "relevance" %}selected{% endif %}>Relevance</option>
+            <option value="newest" {% if rank_by == "newest" %}selected{% endif %}>Newest</option>
+            <option value="engagement" {% if rank_by == "engagement" %}selected{% endif %}>Engagement</option>
+        </select>
+
         <button type="submit">Search</button>
     </form>
 
@@ -28,12 +36,15 @@
 
     {% if query and not error %}
         <h2>Results for "{{ query }}"</h2>
+        <p class="meta">Ranking mode: {{ rank_by }}</p>
+        
         {% if results %}
             {% for result in results %}
                 <article>
                     <p class="meta">{{ result.author }}{% if result.created_at %} | {{ result.created_at }}{% endif %}</p>
                     <p class="scores">Relevance Score: {{ "%.2f"|format(result.relevance_score) }}</p>
                     <p class="scores">Final Score: {{ "%.2f"|format(result.final_score) }}</p>
+                    <p class="scores">Engagement: {{ result.engagement }}</p>
                     <p class="snippet">{{ result.snippet }}</p>
                     <p>{{ result.text }}</p>
                     {% if result.external_url %}
