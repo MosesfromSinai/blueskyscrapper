@@ -3,6 +3,5 @@ data/
 indexdir/
 __pycache__/
 *.pyc
-requirements.txt
-collector.sh
-crawler.sh
+output_demo/
+.venv/
