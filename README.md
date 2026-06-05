@@ -18,6 +18,8 @@ blueskyscrapper/
 ├── index_bluesky.py     # builds the PyLucene search index
 ├── search_app.py        # Flask search interface
 ├── crawler.sh           # Unix/Linux executable script for running the crawler
+├── indexer.sh           # helper script for rebuilding the PyLucene index
+├── run_app.sh           # helper script for running the Flask search app
 ├── collector.sh         # optional shell script/helper
 ├── requirements.txt     # Python dependencies
 ├── sample_data/         # sample output data
@@ -38,7 +40,7 @@ pip install -r requirements.txt
 
 Part B also requires PyLucene. PyLucene is not listed as a normal pip dependency
 because it usually needs a separate local installation with Java/Lucene support.
-Install PyLucene in the Python environment before running the indexer or search app.
+The official CS172 server already has Java, Lucene, and PyLucene installed.
 
 If `requirements.txt` is not available, install the dependencies manually:
 
@@ -117,34 +119,62 @@ data/posts_2.jsonl
 data/posts_3.jsonl
 ```
 
-## Part B: PyLucene Search
+## Part B: CS172 Server Deployment
 
 The Part B collection is the Bluesky JSONL data. The indexer reads every
 `.jsonl` file in `sample_data/` and also reads `data/*.jsonl` if the `data/`
 folder exists.
 
+On the official CS172 server, use:
+
+```bash
+ssh class-047
+cd blueskyscrapper
+```
+
 Build the PyLucene index:
 
 ```bash
-python index_bluesky.py
+python3 index_bluesky.py
 ```
 
-This creates a local Lucene index in:
+This rebuilds the generated Lucene index in:
 
 ```bash
 indexdir/
 ```
 
+The `indexdir/` folder is generated and ignored by Git, but it must exist on
+the deployed server for search to work.
+
+You can also use the helper script:
+
+```bash
+./indexer.sh
+```
+
 Run the Flask search app:
 
 ```bash
-python search_app.py
+python3 search_app.py
 ```
 
-Then open:
+You can also use the helper script:
 
 ```bash
-http://127.0.0.1:5000
+./run_app.sh
+```
+
+The app listens on `0.0.0.0:8080`. On the CS172 server, open:
+
+```bash
+http://class-047.cs.ucr.edu:8080
+```
+
+For local testing on the same machine, open:
+
+```bash
+http://127.0.0.1:8080
 ```
 
 The search page shows the top 10 results. Each result displays the raw
@@ -179,32 +209,15 @@ engagement = likes + replies + reposts + quotes
 
 This allows users to compare different ways of ranking social media search results including relevance-based, time-based, engagement-based, and combined ranking.
 
-## Docker Setup for PyLucene
+## Phase B Final Submission Checklist
 
-Docker can be used for Part B because PyLucene may not install easily on
-Apple Silicon/macOS. The Docker container gives the project a Linux environment
-with PyLucene available.
+Before submitting, make sure the final report PDF includes:
 
-Build the Docker image:
+- Collaboration details describing each team member's contributions
+- System overview covering architecture, index structures, and search algorithm
+- Known limitations of the system
+- Deployment instructions for rebuilding the index and running the Flask app
+- Screenshots showing the search page and search results
+- A real link to the short video demo, up to 5 minutes
 
-```bash
-docker build -t bluesky-pylucene .
-```
-
-Build the index inside Docker:
-
-```bash
-docker run --rm -v "$PWD:/app" bluesky-pylucene python index_bluesky.py
-```
-
-Run the Flask search app inside Docker:
-
-```bash
-docker run --rm -it -p 5001:5000 -v "$PWD:/app" bluesky-pylucene flask --app search_app run --host=0.0.0.0 --port=5000 --debug
-```
-
-Then open:
-
-```bash
-http://localhost:5001
-```
+Video demo link: TODO - add the real video URL before submitting.
