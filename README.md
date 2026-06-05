@@ -207,17 +207,3 @@ The engagement value is calculated as:
 engagement = likes + replies + reposts + quotes
 ```
 
-This allows users to compare different ways of ranking social media search results including relevance-based, time-based, engagement-based, and combined ranking.
-
-## Phase B Final Submission Checklist
-
-Before submitting, make sure the final report PDF includes:
-
-- Collaboration details describing each team member's contributions
-- System overview covering architecture, index structures, and search algorithm
-- Known limitations of the system
-- Deployment instructions for rebuilding the index and running the Flask app
-- Screenshots showing the search page and search results
-- A real link to the short video demo, up to 5 minutes
-
-Video demo link: TODO - add the real video URL before submitting.
