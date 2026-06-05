@@ -54,8 +54,7 @@ def search_candidates(query_text, limit=CANDIDATE_LIMIT):
     try:
         query = parse_query(query_text)
         hits = searcher.search(query, limit).scoreDocs
-        stored_fields = searcher.storedFields()
-        return [(stored_fields.document(hit.doc), float(hit.score)) for hit in hits]
+        return [(searcher.doc(hit.doc), float(hit.score)) for hit in hits]
     finally:
         reader.close()
         directory.close()
